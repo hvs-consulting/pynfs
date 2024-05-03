@@ -12,8 +12,10 @@ const IPPROTO_UDP = 17;     /* protocol number for UDP/IP */
 
 struct pmaplist {
 	mapping map;
-	pmaplist next;
+	pmaplistptr next;
 };
+
+typedef pmaplist *pmaplistptr;
 
 struct call_args {
 	unsigned int prog;

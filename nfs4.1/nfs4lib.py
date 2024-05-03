@@ -1,9 +1,10 @@
 from __future__ import with_statement
 import rpc.rpc as rpc
-import xdrdef.nfs4_const
-from xdrdef.nfs4_pack import NFS4Packer, NFS4Unpacker
-import xdrdef.nfs4_type
-import nfs_ops
+from nfs4 import xdrdef
+from nfs4.xdrdef import nfs4_const
+from nfs4.xdrdef.nfs4_pack import NFS4Packer, NFS4Unpacker
+from nfs4.xdrdef import nfs4_type
+from nfs4 import nfs_ops
 import time
 import collections
 import hmac
@@ -11,7 +12,7 @@ import struct
 import random
 import re
 import os
-from locking import Lock
+from nfs4.locking import Lock
 try:
     from Crypto.Cipher import AES
 except ImportError:
@@ -649,7 +650,7 @@ class AttrConfig(object):
         self._s = (kind=="serv")
         self._fs = (kind=="fs")
 
-from xdrdef.nfs4_const import *
+from nfs4.xdrdef.nfs4_const import *
 
 A = AttrConfig
 attr_info = { FATTR4_SUPPORTED_ATTRS : A("r", "fs"),

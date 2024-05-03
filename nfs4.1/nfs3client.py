@@ -1,18 +1,20 @@
-import use_local # HACK so don't have to rebuild constantly
+#import use_local # HACK so don't have to rebuild constantly
 import rpc.rpc as rpc
-import nfs4lib
+import nfs4
+import nfs4.nfs4lib as nfs4lib
+import nfs4.xdrdef
 #from nfs4lib import NFS4Error, NFS4Replay, inc_u32
-from xdrdef.sctrl_pack import SCTRLPacker, SCTRLUnpacker
-from xdrdef.nfs3_type import *
-from xdrdef.nfs3_const import *
-from xdrdef.nfs3_pack import NFS3Packer, NFS3Unpacker
-from xdrdef.mnt3_type import *
-from xdrdef.mnt3_const import *
-from xdrdef.mnt3_pack import MNT3Packer, MNT3Unpacker
-from xdrdef.portmap_type import *
-from xdrdef.portmap_const import *
-from xdrdef.portmap_pack import PORTMAPPacker, PORTMAPUnpacker
-import nfs_ops
+from nfs4.xdrdef.sctrl_pack import SCTRLPacker, SCTRLUnpacker
+from nfs4.xdrdef.nfs3_type import *
+from nfs4.xdrdef.nfs3_const import *
+from nfs4.xdrdef.nfs3_pack import NFS3Packer, NFS3Unpacker
+from nfs4.xdrdef.mnt3_type import *
+from nfs4.xdrdef.mnt3_const import *
+from nfs4.xdrdef.mnt3_pack import MNT3Packer, MNT3Unpacker
+from nfs4.xdrdef.portmap_type import *
+from nfs4.xdrdef.portmap_const import *
+from nfs4.xdrdef.portmap_pack import PORTMAPPacker, PORTMAPUnpacker
+from nfs4 import nfs_ops
 import time, struct
 import threading
 import hmac
@@ -72,13 +74,13 @@ class PORTMAPClient(rpc.Client):
 
 class Mnt3Client(rpc.Client):
     def __init__(self, host='localhost', port=None):
-        rpc.Client.__init__(self, MOUNT_PROGRAM, MOUNT_V3)
+        rpc.Client.__init__(self, MOUNT_PROGRAM, MOUNT_V3, secureport=True)
         self.server_address = (host, port)
         self._pipe = None
 
     def get_pipe(self):
         if not self._pipe or not self._pipe.is_active():
-            self._pipe = self.connect(self.server_address)
+            self._pipe = self.connect(self.server_address, secure = self.secureport)
         return self._pipe
 
     def proc_async(self, procnum, procarg, credinfo=None, pipe=None,
@@ -118,8 +120,8 @@ class Mnt3Client(rpc.Client):
         return res.mountinfo.fhandle
 
 class NFS3Client(rpc.Client):
-    def __init__(self, host='localhost', port=None, ctrl_proc=16, summary=None):
-        rpc.Client.__init__(self, 100003, 3)
+    def __init__(self, host='localhost', port=None, ctrl_proc=16, summary=None, secure=True):
+        rpc.Client.__init__(self, 100003, 3, secure)
         self.portmap = PORTMAPClient(host=host)
         self.mntport = self.portmap.get_port(MOUNT_PROGRAM, MOUNT_V3)
         if not port:
@@ -136,13 +138,13 @@ class NFS3Client(rpc.Client):
 
     def get_pipe(self):
         if not self._pipe or not self._pipe.is_active():
-            self._pipe = self.connect(self.server_address)
+            self._pipe = self.connect(self.server_address, self.secureport)
         return self._pipe
 
     def set_cred(self, credinfo):
         self.default_cred = credinfo
 
-    def null_async(self, data=""):
+    def null_async(self, data=b""):
         return self.send_call(self.get_pipe(), 0, data)
 
     def null(self, *args, **kwargs):

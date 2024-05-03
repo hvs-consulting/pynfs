@@ -932,6 +932,7 @@ class Client(ConnectionHandler):
         self.default_vers = version
         self.default_cred = security.CredInfo()
         self.secureport = secureport
+        self.secure = secureport
 
         # Start polling
         t = threading.Thread(target=self.start, name="PollingThread")

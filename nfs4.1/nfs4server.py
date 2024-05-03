@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 from __future__ import with_statement
-import use_local # HACK so don't have to rebuild constantly
-import nfs4lib
-from nfs4lib import inc_u32, NFS4Error, NFS4Replay
+#import use_local # HACK so don't have to rebuild constantly
+from nfs4 import nfs4lib
+from nfs4.nfs4lib import inc_u32, NFS4Error, NFS4Replay
 import rpc.rpc as rpc
-from xdrdef.nfs4_const import *
-from xdrdef.nfs4_type import *
-from xdrdef.sctrl_pack import SCTRLPacker, SCTRLUnpacker
-import xdrdef.sctrl_type, xdrdef.sctrl_const
+from nfs4.xdrdef.nfs4_const import *
+from nfs4.xdrdef.nfs4_type import *
+from nfs4.xdrdef.sctrl_pack import SCTRLPacker, SCTRLUnpacker
+#import nfs4.xdrdef.sctrl_type, nfs4.xdrdef.sctrl_const
+import nfs4.xdrdef as xdrdef
 import traceback, threading
-from locking import Lock, Counter
+from nfs4.locking import Lock, Counter
 import time
 import hmac
 import random
 import struct
 import collections
 import logging
-from nfs4state import find_state
-from nfs4commoncode import CompoundState, encode_status, encode_status_by_name
-from fs import RootFS, ConfigFS
-from config import ServerConfig, ServerPerClientConfig, OpsConfigServer, Actions
+from nfs4.nfs4state import find_state
+from nfs4.nfs4commoncode import CompoundState, encode_status, encode_status_by_name
+from nfs4.fs import RootFS, ConfigFS
+from nfs4.config import ServerConfig, ServerPerClientConfig, OpsConfigServer, Actions
 
 logging.basicConfig(level=logging.WARN,
                     format="%(levelname)-7s:%(name)s:%(message)s")

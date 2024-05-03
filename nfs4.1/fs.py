@@ -1,17 +1,17 @@
-from nfs4state import FileState
-from xdrdef.nfs4_const import *
-from xdrdef.nfs4_type import fsid4, layout4, layout_content4, nfsv4_1_file_layout4
-import nfs4lib
-from nfs4lib import NFS4Error
+from nfs4.nfs4state import FileState
+from nfs4.xdrdef.nfs4_const import *
+from nfs4.xdrdef.nfs4_type import fsid4, layout4, layout_content4, nfsv4_1_file_layout4
+from nfs4 import nfs4lib
+from nfs4.nfs4lib import NFS4Error
 import struct
 import logging
-from locking import Lock, RWLock
+from nfs4.locking import Lock, RWLock
 try:
     import cStringIO.StringIO as StringIO
 except:
     from io import StringIO
 import time
-from xdrdef.nfs4_pack import NFS4Packer
+from nfs4.xdrdef.nfs4_pack import NFS4Packer
 
 log_o = logging.getLogger("fs.obj")
 log_fs = logging.getLogger("fs")
@@ -703,7 +703,7 @@ class StubFS_Mem(FileSystem):
     def sync(self, obj, how):
         return FILE_SYNC4
 
-from config import ServerPerClientConfig, ConfigAction
+from nfs4.config import ServerPerClientConfig, ConfigAction
 
 class ConfigObj(FSObject):
     def associate(self, configline):
@@ -1071,8 +1071,8 @@ class StubFS_Disk(FileSystem):
 
 ###################################################
 
-from xdrdef.pnfs_block_type import pnfs_block_extent4, pnfs_block_layout4
-import block
+from nfs4.xdrdef.pnfs_block_type import pnfs_block_extent4, pnfs_block_layout4
+from nfs4 import block
 
 class my_ro_extent(object):
     def __init__(self, f_offset, d_offset, length):
