@@ -1,7 +1,7 @@
-from xdrdef.nfs4_type import server_owner4, nfs_impl_id4
-from xdrdef.nfs4_const import *
-import xdrdef.nfs4_const
-import nfs4lib
+from nfs4.xdrdef.nfs4_type import server_owner4, nfs_impl_id4
+from nfs4.xdrdef.nfs4_const import *
+#import xdrdef.nfs4_const
+import nfs4.nfs4lib
 from copy import deepcopy
 import os
 

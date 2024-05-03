@@ -1,18 +1,18 @@
-import use_local # HACK so don't have to rebuild constantly
+#import use_local # HACK so don't have to rebuild constantly
 import rpc.rpc as rpc
-import nfs4lib
-from nfs4lib import NFS4Error, NFS4Replay, inc_u32
-from xdrdef.nfs4_type import *
-from xdrdef.nfs4_const import *
-from xdrdef.sctrl_pack import SCTRLPacker, SCTRLUnpacker
-import nfs_ops
+from nfs4 import nfs4lib
+from nfs4.nfs4lib import NFS4Error, NFS4Replay, inc_u32
+from nfs4.xdrdef.nfs4_type import *
+from nfs4.xdrdef.nfs4_const import *
+from nfs4.xdrdef.sctrl_pack import SCTRLPacker, SCTRLUnpacker
+from nfs4 import nfs_ops
 op = nfs_ops.NFS4ops()
 import time, struct
 import threading
 import hmac
 import inspect
 from os.path import basename
-from nfs4commoncode import CBCompoundState as CompoundState, \
+from nfs4.nfs4commoncode import CBCompoundState as CompoundState, \
      cb_encode_status as encode_status, \
      cb_encode_status_by_name as encode_status_by_name
 
@@ -440,8 +440,8 @@ class ClientRecord(object):
         self._cb_hook("post", nfs_cb_opnum4[op_num][3:].lower(), funct)
 
 # XXX FIXME - this is for Slot code, put in reuasable spot if this works
-from nfs4server import Slot
-from nfs4server import Channel as RecvChannel
+from nfs4.nfs4server import Slot
+from nfs4.nfs4server import Channel as RecvChannel
 
 class SendChannel(object):
     def __init__(s, attrs):

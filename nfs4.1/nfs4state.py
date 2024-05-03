@@ -1,14 +1,14 @@
 from __future__ import with_statement
 from contextlib import contextmanager
 import threading
-from locking import Lock
+from nfs4.locking import Lock
 import struct
-import nfs4lib
-from nfs4lib import NFS4Error
+from nfs4 import nfs4lib
+from nfs4.nfs4lib import NFS4Error
 #from xdrdef.nfs4_type import stateid4
-from xdrdef.nfs4_type import *
-from xdrdef.nfs4_const import *
-import nfs_ops
+from nfs4.xdrdef.nfs4_type import *
+from nfs4.xdrdef.nfs4_const import *
+from nfs4 import nfs_ops
 import rpc.rpc as rpc
 import logging
 
