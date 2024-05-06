@@ -7,9 +7,9 @@
 *.pyc
 *.pyo
 
-*_const.py
-*_type.py
-*_pack.py
+#*_const.py
+#*_type.py
+#*_pack.py
 parser.out
 parsetab.py
 
