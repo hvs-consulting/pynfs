@@ -1,3 +1,6 @@
+This is a fork of pynfs that includes modifications for the nfs-enum
+package. There is no active development happening in this repository.
+
 This tree includes support for both 4.0 and 4.1 pynfs testing.  It is
 the merge of what were originally two independent projects--initially
 the 4.0 pynfs code was all moved into the nfs4.0 directory, but as time
