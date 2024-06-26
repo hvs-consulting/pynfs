@@ -145,7 +145,7 @@ class DeferredData(object):
         self._exception = None
         self.msg = msg # Data that thread calling fill might need
 
-    def wait(self, timeout=300):
+    def wait(self, timeout=3):
         """Wait for data to be filled in"""
         self._filled.wait(timeout)
         if not self._filled.isSet():
@@ -370,7 +370,7 @@ class RpcPipe(Pipe):
     def is_active(self):
         return self._active
 
-    def listen(self, xid, timeout=None):
+    def listen(self, xid, timeout=3):
         """Wait for a reply to a CALL."""
         self._pending[xid].wait(timeout)
         reply = self._pending[xid].data # This is set at end of self.rcv_reply
@@ -805,7 +805,8 @@ class ConnectionHandler(object):
         #       else return AUTH_BADCRED
         return True
 
-    def connect(self, address, secure=False):
+    next_port = 1
+    def connect(self, address, secure=False, timeout=3.0):
         """Connect to given address, returning new pipe
 
         If secure==True, will bind local asocket to a port < 1024.
@@ -818,9 +819,11 @@ class ConnectionHandler(object):
             sock = None
             try:
                 s = socket.socket(af, socktype, proto)
+                s.settimeout(timeout)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 if secure:
-                    self.bindsocket(s)
+                    self.bindsocket(s, ConnectionHandler.next_port)
+                    ConnectionHandler.next_port += 1
                 s.connect(sa)
                 err = None
                 break

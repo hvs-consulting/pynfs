@@ -29,14 +29,15 @@ log_cb = logging.getLogger("nfs.client.cb")
 op3 = nfs_ops.NFS3ops()
 
 class PORTMAPClient(rpc.Client):
-    def __init__(self, host='localhost', port=PMAP_PORT):
+    def __init__(self, host='localhost', port=PMAP_PORT, timeout=3.0):
         rpc.Client.__init__(self, PMAP_PROG, PMAP_VERS)
         self.server_address = (host, port)
         self._pipe = None
+        self.timeout = timeout
 
     def get_pipe(self):
         if not self._pipe or not self._pipe.is_active():
-           self._pipe = self.connect(self.server_address)
+           self._pipe = self.connect(self.server_address, timeout=self.timeout)
         return self._pipe
 
     def proc_async(self, procnum, procarg, credinfo=None, pipe=None,
@@ -56,7 +57,7 @@ class PORTMAPClient(rpc.Client):
         res = self.listen(xid, restypename, pipe=pipe)
         return res
 
-    def listen(self, xid, restypename, pipe=None, timeout=10.0):
+    def listen(self, xid, restypename, pipe=None, timeout=3):
         if pipe is None:
             pipe = self.get_pipe()
         header, data = pipe.listen(xid, timeout)
@@ -73,14 +74,15 @@ class PORTMAPClient(rpc.Client):
         return res
 
 class Mnt3Client(rpc.Client):
-    def __init__(self, host='localhost', port=None):
+    def __init__(self, host='localhost', port=None, timeout=3.0):
         rpc.Client.__init__(self, MOUNT_PROGRAM, MOUNT_V3, secureport=True)
         self.server_address = (host, port)
         self._pipe = None
+        self.timeout = timeout
 
     def get_pipe(self):
         if not self._pipe or not self._pipe.is_active():
-            self._pipe = self.connect(self.server_address, secure = self.secureport)
+            self._pipe = self.connect(self.server_address, secure = self.secureport, timeout=self.timeout)
         return self._pipe
 
     def proc_async(self, procnum, procarg, credinfo=None, pipe=None,
@@ -100,7 +102,7 @@ class Mnt3Client(rpc.Client):
         res = self.listen(xid, restypename, pipe=pipe)
         return res
 
-    def listen(self, xid, restypename, pipe=None, timeout=10.0):
+    def listen(self, xid, restypename, pipe=None, timeout=3):
         if pipe is None:
             pipe = self.get_pipe()
         header, data = pipe.listen(xid, timeout)
@@ -120,9 +122,9 @@ class Mnt3Client(rpc.Client):
         return res.mountinfo.fhandle
 
 class NFS3Client(rpc.Client):
-    def __init__(self, host='localhost', port=None, ctrl_proc=16, summary=None, secure=True):
+    def __init__(self, host='localhost', port=None, ctrl_proc=16, summary=None, secure=True, timeout=3.0):
         rpc.Client.__init__(self, 100003, 3, secure)
-        self.portmap = PORTMAPClient(host=host)
+        self.portmap = PORTMAPClient(host=host, timeout=timeout)
         self.mntport = self.portmap.get_port(MOUNT_PROGRAM, MOUNT_V3)
         if not port:
             self.port = self.portmap.get_port(100003, 3)
@@ -134,11 +136,12 @@ class NFS3Client(rpc.Client):
         self.ctrl_proc = ctrl_proc
         self.summary = summary
         self._pipe = None
-        self.mntclnt = Mnt3Client(host=host, port=self.mntport)
+        self.mntclnt = Mnt3Client(host=host, port=self.mntport, timeout=timeout)
+        self.timeout = timeout
 
     def get_pipe(self):
         if not self._pipe or not self._pipe.is_active():
-            self._pipe = self.connect(self.server_address, self.secureport)
+            self._pipe = self.connect(self.server_address, self.secureport, self.timeout)
         return self._pipe
 
     def set_cred(self, credinfo):
@@ -172,7 +175,7 @@ class NFS3Client(rpc.Client):
                 nfsstat3[res.status])
         return res
 
-    def listen(self, xid, procarg=None, pipe=None, timeout=10.0):
+    def listen(self, xid, procarg=None, pipe=None, timeout=3):
         if pipe is None:
             pipe = self.get_pipe()
         header, data = pipe.listen(xid, timeout)
