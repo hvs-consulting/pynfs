@@ -12,7 +12,7 @@ try:
     import gssapi
     from gssapi.raw.misc import GSSError
 except ImportError:
-    print("Could not find gssapi module, proceeding without")
+    #print("Could not find gssapi module, proceeding without")
     gssapi = None
 import threading
 import logging
