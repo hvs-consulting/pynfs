@@ -57,10 +57,10 @@ class PORTMAPClient(rpc.Client):
         res = self.listen(xid, restypename, pipe=pipe)
         return res
 
-    def listen(self, xid, restypename, pipe=None, timeout=3):
+    def listen(self, xid, restypename, pipe=None):
         if pipe is None:
             pipe = self.get_pipe()
-        header, data = pipe.listen(xid, timeout)
+        header, data = pipe.listen(xid, self.timeout)
         if data:
             p = PORTMAPUnpacker(data)
             res_unpacker = getattr(p, 'unpack_%s' % restypename)
@@ -102,10 +102,10 @@ class Mnt3Client(rpc.Client):
         res = self.listen(xid, restypename, pipe=pipe)
         return res
 
-    def listen(self, xid, restypename, pipe=None, timeout=3):
+    def listen(self, xid, restypename, pipe=None):
         if pipe is None:
             pipe = self.get_pipe()
-        header, data = pipe.listen(xid, timeout)
+        header, data = pipe.listen(xid, self.timeout)
         if data:
             p = MNT3Unpacker(data)
             res_unpacker = getattr(p, 'unpack_%s' % restypename)
@@ -176,10 +176,10 @@ class NFS3Client(rpc.Client):
                 nfsstat3[res.status])
         return res
 
-    def listen(self, xid, procarg=None, pipe=None, timeout=3):
+    def listen(self, xid, procarg=None, pipe=None):
         if pipe is None:
             pipe = self.get_pipe()
-        header, data = pipe.listen(xid, timeout)
+        header, data = pipe.listen(xid, self.timeout)
         if data:
             p = NFS3Unpacker(data)
             argname = procarg.__class__.__name__
