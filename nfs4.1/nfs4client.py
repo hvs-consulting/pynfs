@@ -101,10 +101,10 @@ class NFS4Client(rpc.Client, rpc.Server):
                 nfsstat4[res.status])
         return res
 
-    def listen(self, xid, pipe=None, timeout=3):
+    def listen(self, xid, pipe=None):
         if pipe is None:
             pipe = self.c1
-        header, data = pipe.listen(xid, timeout)
+        header, data = pipe.listen(xid, self.timeout)
         if data:
             p = nfs4lib.FancyNFS4Unpacker(data)
             data = p.unpack_COMPOUND4res()
