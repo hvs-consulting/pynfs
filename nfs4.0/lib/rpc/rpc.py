@@ -9,11 +9,15 @@
 
 from __future__ import absolute_import
 import struct
-import xdrlib
 import socket
 import select
 import threading
 import errno
+
+try:
+    import xdrlib3 as xdrlib
+except:
+    import xdrlib
 
 from rpc.rpc_const import *
 from rpc.rpc_type import *
@@ -226,8 +230,8 @@ class RPCClient(object):
             try:
                 sock.bind(('', port))
                 return
-            except socket.error as why:
-                if why[0] == errno.EADDRINUSE:
+            except OSError as why:
+                if why.errno == errno.EADDRINUSE:
                     port += 1
                 else:
                     print("Could not use low port")

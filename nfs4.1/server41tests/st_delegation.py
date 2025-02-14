@@ -2,7 +2,7 @@ from .st_create_session import create_session
 from .st_open import open_claim4
 from xdrdef.nfs4_const import *
 
-from .environment import check, fail, create_file, open_file, close_file
+from .environment import check, fail, create_file, open_file, close_file, do_getattrdict
 from xdrdef.nfs4_type import *
 import nfs_ops
 op = nfs_ops.NFS4ops()
@@ -79,7 +79,7 @@ def testWriteDeleg(t, env):
     FLAGS: writedelegations deleg
     CODE: DELEG2
     """
-    _testDeleg(t, env, OPEN4_SHARE_ACCESS_WRITE,
+    _testDeleg(t, env, OPEN4_SHARE_ACCESS_READ|OPEN4_SHARE_ACCESS_WRITE,
        OPEN4_SHARE_ACCESS_WANT_WRITE_DELEG, OPEN4_SHARE_ACCESS_READ)
 
 def testAnyDeleg(t, env):
@@ -289,3 +289,101 @@ def testServerSelfConflict3(t, env):
     check(res, [NFS4_OK, NFS4ERR_DELAY])
     if not completed:
         fail("delegation break not received")
+
+def _testCbGetattr(t, env, change=0, size=0):
+    cb = threading.Event()
+    cbattrs = {}
+    def getattr_post_hook(arg, env, res):
+        res.obj_attributes = cbattrs
+        env.notify = cb.set
+        return res
+
+    sess1 = env.c1.new_client_session(b"%s_1" % env.testname(t))
+    sess1.client.cb_post_hook(OP_CB_GETATTR, getattr_post_hook)
+
+    res = sess1.compound([op.putrootfh(),
+                          op.getattr(nfs4lib.list2bitmap([FATTR4_SUPPORTED_ATTRS,
+                                                          FATTR4_OPEN_ARGUMENTS]))])
+    check(res)
+    caps = res.resarray[-1].obj_attributes
+
+    openmask = (OPEN4_SHARE_ACCESS_READ  |
+                OPEN4_SHARE_ACCESS_WRITE |
+                OPEN4_SHARE_ACCESS_WANT_WRITE_DELEG)
+
+    if caps[FATTR4_SUPPORTED_ATTRS] & FATTR4_OPEN_ARGUMENTS:
+        if caps[FATTR4_OPEN_ARGUMENTS].oa_share_access_want & OPEN_ARGS_SHARE_ACCESS_WANT_DELEG_TIMESTAMPS:
+            openmask |= 1<<OPEN_ARGS_SHARE_ACCESS_WANT_DELEG_TIMESTAMPS
+
+    fh, deleg = __create_file_with_deleg(sess1, env.testname(t), openmask)
+    print("__create_file_with_deleg: ", fh, deleg)
+    attrs1 = do_getattrdict(sess1, fh, [FATTR4_CHANGE, FATTR4_SIZE,
+                                        FATTR4_TIME_ACCESS, FATTR4_TIME_MODIFY])
+
+    cbattrs[FATTR4_CHANGE] = attrs1[FATTR4_CHANGE]
+    cbattrs[FATTR4_SIZE] = attrs1[FATTR4_SIZE]
+
+    if change != 0:
+        cbattrs[FATTR4_CHANGE] += 1
+        if size > 0:
+            cbattrs[FATTR4_SIZE] = size
+
+    if openmask & 1<<OPEN_ARGS_SHARE_ACCESS_WANT_DELEG_TIMESTAMPS:
+        cbattrs[FATTR4_TIME_DELEG_ACCESS] = attrs1[FATTR4_TIME_ACCESS]
+        cbattrs[FATTR4_TIME_DELEG_MODIFY] = attrs1[FATTR4_TIME_MODIFY]
+        if change != 0:
+            cbattrs[FATTR4_TIME_DELEG_ACCESS].seconds += 1
+            cbattrs[FATTR4_TIME_DELEG_MODIFY].seconds += 1
+
+    # create a new client session and do a GETATTR
+    sess2 = env.c1.new_client_session(b"%s_2" % env.testname(t))
+    slot = sess2.compound_async([op.putfh(fh), op.getattr(1<<FATTR4_CHANGE | 1<<FATTR4_SIZE |
+                                                          1<<FATTR4_TIME_ACCESS | 1<<FATTR4_TIME_MODIFY)])
+
+    # wait for the CB_GETATTR
+    completed = cb.wait(2)
+    res = sess2.listen(slot)
+    attrs2 = res.resarray[-1].obj_attributes
+    sess1.compound([op.putfh(fh), op.delegreturn(deleg.write.stateid)])
+    check(res, [NFS4_OK, NFS4ERR_DELAY])
+    if not completed:
+        fail("CB_GETATTR not received")
+    return attrs1, attrs2
+
+def testCbGetattrNoChange(t, env):
+    """Test CB_GETATTR with no changes
+
+    Get a write delegation, then do a getattr from a second client. Have the
+    client regurgitate back the same attrs (indicating no changes). Then test
+    that the attrs that the second client gets back match the first.
+
+    FLAGS: deleg
+    CODE: DELEG24
+    """
+    attrs1, attrs2 = _testCbGetattr(t, env)
+    if attrs1[FATTR4_SIZE] != attrs2[FATTR4_SIZE]:
+        fail("Bad size: %u != %u" % (attrs1[FATTR4_SIZE], attrs2[FATTR4_SIZE]))
+    if attrs1[FATTR4_CHANGE] != attrs2[FATTR4_CHANGE]:
+        fail("Bad change attribute: %u != %u" % (attrs1[FATTR4_CHANGE], attrs2[FATTR4_CHANGE]))
+    if FATTR4_TIME_DELEG_MODIFY in attrs2:
+        if attrs1[FATTR4_TIME_MODIFY] != attrs2[FATTR4_TIME_DELEG_MODIFY]:
+            fail("Bad modify time: ", attrs1[FATTR4_TIME_MODIFY], " != ", attrs2[FATTR4_TIME_DELEG_MODIFY])
+
+def testCbGetattrWithChange(t, env):
+    """Test CB_GETATTR with simulated changes to file
+
+    Get a write delegation, then do a getattr from a second client. Modify the
+    attrs before sending them back to the server. Test that the second client
+    sees different attrs than the original one.
+
+    FLAGS: deleg
+    CODE: DELEG25
+    """
+    attrs1, attrs2 = _testCbGetattr(t, env, change=1, size=5)
+    if attrs2[FATTR4_SIZE] != 5:
+        fail("Bad size: %u != 5" % attrs2[FATTR4_SIZE])
+    if attrs1[FATTR4_CHANGE] == attrs2[FATTR4_CHANGE]:
+        fail("Bad change attribute: %u == %u" % (attrs1[FATTR4_CHANGE], attrs2[FATTR4_CHANGE]))
+    if FATTR4_TIME_DELEG_MODIFY in attrs2:
+        if attrs1[FATTR4_TIME_MODIFY] == attrs2[FATTR4_TIME_DELEG_MODIFY]:
+            fail("Bad modify time: ", attrs1[FATTR4_TIME_MODIFY], " == ", attrs2[FATTR4_TIME_DELEG_MODIFY])

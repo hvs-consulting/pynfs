@@ -27,7 +27,7 @@ op4 = nfs_ops.NFS4ops()
 SHOW_TRAFFIC = 0
 
 class NFS4Client(rpc.Client, rpc.Server):
-    def __init__(self, host=b'localhost', port=2049, minorversion=1, ctrl_proc=16, summary=None, secure=False, timeout=3.0):
+    def __init__(self, host=b'localhost', port=2049, minorversion=2, ctrl_proc=16, summary=None, secure=False, timeout=3.0):
         rpc.Client.__init__(self, 100003, 4)
         self.prog = 0x40000000
         self.versions = [1] # List of supported versions of prog
@@ -270,6 +270,12 @@ class NFS4Client(rpc.Client, rpc.Server):
                                 arg.csa_slotid,
                                 channel.maxrequests, channel.maxrequests)# STUB
         res = self.posthook(arg, env, res)
+        return encode_status(NFS4_OK, res)
+
+    def op_cb_getattr(self, arg, env):
+        log_cb.info("In CB_GETATTR")
+        self.prehook(arg, env)
+        res = self.posthook(arg, env, res=CB_GETATTR4resok())
         return encode_status(NFS4_OK, res)
 
     def op_cb_recall(self, arg, env):
